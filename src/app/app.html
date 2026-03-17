@@ -1,0 +1,112 @@
+<!-- Main Application Container -->
+<div class="app-container">
+  <!-- Header Toolbar -->
+  <mat-toolbar color="primary" class="app-toolbar">
+    <div class="toolbar-content">
+      <!-- Left Section: Logo and Title -->
+      <div class="toolbar-left">
+        <button mat-icon-button class="menu-button" matTooltip="Menu" [matMenuTriggerFor]="mainMenu">
+          <mat-icon>menu</mat-icon>
+        </button>
+        <mat-icon class="app-icon">groups</mat-icon>
+        <h1 class="app-title">{{ title() }}</h1>
+      </div>
+
+      <!-- Right Section: Actions and Theme Toggle -->
+      <div class="toolbar-right">
+        <button mat-icon-button
+                matTooltip="Toggle detail panel"
+                (click)="toggleDetailPanel()">
+          <mat-icon>{{ showDetail() ? 'view_sidebar' : 'view_agenda' }}</mat-icon>
+        </button>
+
+        <mat-slide-toggle
+          [checked]="isDarkTheme()"
+          (change)="toggleTheme()"
+          class="theme-toggle"
+          [matTooltip]="isDarkTheme() ? 'Switch to light theme' : 'Switch to dark theme'">
+          <mat-icon>{{ isDarkTheme() ? 'dark_mode' : 'light_mode' }}</mat-icon>
+        </mat-slide-toggle>
+
+        <button mat-icon-button matTooltip="View API Docs" (click)="openApiDocs()">
+          <mat-icon>description</mat-icon>
+        </button>
+
+        <button mat-icon-button matTooltip="GitHub Repository" (click)="openGitHub()">
+          <mat-icon>code</mat-icon>
+        </button>
+      </div>
+    </div>
+  </mat-toolbar>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <div class="content-grid" [class.detail-hidden]="!showDetail()">
+      <!-- User List Section -->
+      <div class="list-section">
+        <app-user-list></app-user-list>
+      </div>
+
+      <!-- User Detail Section -->
+      @if (showDetail()) {
+        <div class="detail-section">
+          <app-user-detail></app-user-detail>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <p class="footer-text">
+        Built with Angular {{ getCurrentYear() }} | Powered by JSONPlaceholder API
+      </p>
+      <div class="footer-links">
+        <button mat-button (click)="openGitHub()">
+          <mat-icon>code</mat-icon>
+          GitHub
+        </button>
+        <mat-divider vertical></mat-divider>
+        <button mat-button (click)="openApiDocs()">
+          <mat-icon>api</mat-icon>
+          API Docs
+        </button>
+        <mat-divider vertical></mat-divider>
+        <button mat-button (click)="showAbout()">
+          <mat-icon>info</mat-icon>
+          About
+        </button>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- Main Menu -->
+<mat-menu #mainMenu="matMenu">
+  <button mat-menu-item (click)="toggleDetailPanel()">
+    <mat-icon>{{ showDetail() ? 'view_sidebar' : 'view_agenda' }}</mat-icon>
+    <span>Toggle Detail Panel</span>
+  </button>
+  <button mat-menu-item (click)="toggleTheme()">
+    <mat-icon>{{ isDarkTheme() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    <span>{{ isDarkTheme() ? 'Light' : 'Dark' }} Theme</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="openApiDocs()">
+    <mat-icon>api</mat-icon>
+    <span>API Documentation</span>
+  </button>
+  <button mat-menu-item (click)="openGitHub()">
+    <mat-icon>code</mat-icon>
+    <span>GitHub Repository</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="showAbout()">
+    <mat-icon>info</mat-icon>
+    <span>About</span>
+  </button>
+</mat-menu>
+
+<!-- Router Outlet for future routing -->
+<router-outlet></router-outlet>

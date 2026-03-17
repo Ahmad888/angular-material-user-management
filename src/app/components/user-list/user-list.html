@@ -1,0 +1,273 @@
+<div class="user-list-container">
+  <!-- Header Section -->
+  <mat-card class="header-card">
+    <mat-card-content>
+      <div class="header-content">
+        <div class="title-section">
+          <h1 class="page-title">User Management System</h1>
+          <mat-chip-listbox class="stats-chips">
+            <mat-chip>
+              <mat-icon matChipAvatar>people</mat-icon>
+              {{ totalUsers }} Total Users
+            </mat-chip>
+            @if (hasActiveFilters()) {
+              <mat-chip color="accent" highlighted>
+                <mat-icon matChipAvatar>filter_list</mat-icon>
+                {{ filteredCount }} Filtered
+              </mat-chip>
+            }
+          </mat-chip-listbox>
+        </div>
+        <div class="action-buttons">
+          <button mat-raised-button color="primary" (click)="refreshUsers()" [disabled]="isLoading">
+            <mat-icon>refresh</mat-icon>
+            Refresh
+          </button>
+          <button mat-raised-button (click)="exportToCSV()" [disabled]="!dataSource.data.length">
+            <mat-icon>download</mat-icon>
+            Export CSV
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Filters Section -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-container">
+        <!-- Search Input with Debouncing -->
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search users by name, email, or username</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput
+                 [formControl]="searchControl"
+                 placeholder="Start typing to search..."
+                 autocomplete="off">
+          @if (searchControl.value) {
+            <button matSuffix mat-icon-button (click)="searchControl.setValue('')">
+              <mat-icon>clear</mat-icon>
+            </button>
+          }
+          <mat-hint>Search uses debouncing (300ms delay)</mat-hint>
+        </mat-form-field>
+
+        <!-- Company Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Filter by Company</mat-label>
+          <mat-select [formControl]="companyFilterControl">
+            <mat-option value="">All Companies</mat-option>
+            @for (company of uniqueCompanies; track company) {
+              <mat-option [value]="company">{{ company }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- City Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Filter by City</mat-label>
+          <mat-select [formControl]="cityFilterControl">
+            <mat-option value="">All Cities</mat-option>
+            @for (city of uniqueCities; track city) {
+              <mat-option [value]="city">{{ city }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Clear Filters Button -->
+        @if (hasActiveFilters()) {
+          <button mat-stroked-button
+                  color="warn"
+                  class="clear-filters-btn"
+                  (click)="clearFilters()"
+                  [matBadge]="getActiveFilterCount()"
+                  matBadgeColor="warn">
+            <mat-icon>filter_alt_off</mat-icon>
+            Clear Filters
+          </button>
+        }
+      </div>
+
+      <!-- Results Count -->
+      @if (!isLoading) {
+        <div class="results-info" [@fadeIn]>
+          <mat-chip>
+            <mat-icon matChipAvatar>info</mat-icon>
+            {{ getResultsText() }}
+          </mat-chip>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading State -->
+  @if (isLoading) {
+    <mat-card class="loading-card">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <mat-card-content>
+        <div class="skeleton-container">
+          <h3>Loading users...</h3>
+          <div class="skeleton-table">
+            @for (row of skeletonRows; track $index) {
+              <div class="skeleton-row" [@fadeIn]>
+                <div class="skeleton skeleton-id"></div>
+                <div class="skeleton skeleton-name"></div>
+                <div class="skeleton skeleton-email"></div>
+                <div class="skeleton skeleton-company"></div>
+                <div class="skeleton skeleton-actions"></div>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Error State -->
+  @if (hasError && !isLoading) {
+    <mat-card class="error-card">
+      <mat-card-content>
+        <div class="error-container">
+          <mat-icon color="warn" class="error-icon">error_outline</mat-icon>
+          <h2>Unable to Load Users</h2>
+          <p>{{ errorMessage || 'An unexpected error occurred while fetching users.' }}</p>
+          <button mat-raised-button color="primary" (click)="retry()">
+            <mat-icon>refresh</mat-icon>
+            Try Again
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Data Table -->
+  @if (!isLoading && !hasError) {
+    <mat-card class="table-card" [@fadeIn]>
+      <mat-card-content>
+        <div class="table-container">
+          <table mat-table
+                 [dataSource]="dataSource"
+                 matSort
+                 (matSortChange)="onSortChange($event)"
+                 class="users-table">
+
+            <!-- ID Column -->
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header disabled> # </th>
+              <td mat-cell *matCellDef="let user">
+                <span class="user-id">{{ user.id }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Name Column -->
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header> Name </th>
+              <td mat-cell *matCellDef="let user">
+                <div class="user-info">
+                  <div class="avatar" [matTooltip]="user.name">
+                    {{ getUserInitials(user.name) }}
+                  </div>
+                  <div class="user-details">
+                    <span class="user-name">{{ user.name }}</span>
+                    <span class="user-phone">{{ user.phone }}</span>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Username Column -->
+            <ng-container matColumnDef="username">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header> Username </th>
+              <td mat-cell *matCellDef="let user">
+                <mat-chip>@{{ user.username }}</mat-chip>
+              </td>
+            </ng-container>
+
+            <!-- Email Column -->
+            <ng-container matColumnDef="email">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header> Email </th>
+              <td mat-cell *matCellDef="let user">
+                <a href="mailto:{{ user.email }}" class="email-link">
+                  <mat-icon inline>email</mat-icon>
+                  {{ user.email }}
+                </a>
+              </td>
+            </ng-container>
+
+            <!-- Company Column -->
+            <ng-container matColumnDef="company">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header> Company </th>
+              <td mat-cell *matCellDef="let user">
+                <span class="company-name" [matTooltip]="getCompanyTooltip(user.company)">
+                  {{ formatCompany(user.company) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- City Column -->
+            <ng-container matColumnDef="city">
+              <th mat-header-cell *matHeaderCellDef> City </th>
+              <td mat-cell *matCellDef="let user">
+                <span class="city">
+                  <mat-icon inline>location_city</mat-icon>
+                  {{ user.address.city }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef> Actions </th>
+              <td mat-cell *matCellDef="let user">
+                <button mat-icon-button
+                        color="primary"
+                        [matTooltip]="'View details for ' + user.name"
+                        (click)="viewDetails(user, $event)">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button mat-icon-button
+                        [matTooltip]="'Visit ' + user.website"
+                        (click)="$event.stopPropagation()">
+                  <mat-icon>language</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <!-- Table Rows -->
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row
+                *matRowDef="let user; columns: displayedColumns;"
+                class="user-row"
+                [class.selected]="selectedUser?.id === user.id"
+                (click)="selectUser(user)"
+                [@slideIn]></tr>
+
+            <!-- No Data Row -->
+            <tr class="mat-row" *matNoDataRow>
+              <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
+                @if (!isLoading) {
+                  <div class="no-data-container">
+                    <mat-icon>search_off</mat-icon>
+                    <p>No users found matching your criteria</p>
+                    @if (hasActiveFilters()) {
+                      <button mat-stroked-button (click)="clearFilters()">
+                        Clear Filters
+                      </button>
+                    }
+                  </div>
+                }
+              </td>
+            </tr>
+          </table>
+
+          <!-- Paginator -->
+          <mat-paginator [pageSizeOptions]="pageSizeOptions"
+                         [pageSize]="10"
+                         showFirstLastButtons
+                         aria-label="Select page of users">
+          </mat-paginator>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

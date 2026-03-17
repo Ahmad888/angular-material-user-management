@@ -1,0 +1,309 @@
+<div class="user-detail-container">
+  <!-- No Selection State -->
+  @if (!selectedUser) {
+    <mat-card class="no-selection-card">
+      <mat-card-content>
+        <div class="no-selection-content">
+          <mat-icon class="no-selection-icon">person_search</mat-icon>
+          <h2>No User Selected</h2>
+          <p>Select a user from the list to view their detailed information</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Selected User Details -->
+  @if (selectedUser) {
+    <div class="detail-wrapper" [@slideIn]>
+      <!-- User Header Card -->
+      <mat-card class="user-header-card">
+        <mat-card-content>
+          <div class="user-header">
+            <div class="user-avatar-section">
+              <div class="user-avatar large">
+                {{ getUserInitials(selectedUser.name) }}
+              </div>
+              <div class="user-basic-info">
+                <h1 class="user-name">{{ selectedUser.name }}</h1>
+                <p class="user-username">@{{ selectedUser.username }}</p>
+                <mat-chip-listbox class="user-id-chip">
+                  <mat-chip>
+                    <mat-icon matChipAvatar>badge</mat-icon>
+                    ID: {{ selectedUser.id }}
+                  </mat-chip>
+                </mat-chip-listbox>
+              </div>
+            </div>
+            <div class="header-actions">
+              <button mat-raised-button
+                      color="primary"
+                      (click)="sendEmail(selectedUser.email)"
+                      [matTooltip]="'Send email to ' + selectedUser.name">
+                <mat-icon>email</mat-icon>
+                Send Email
+              </button>
+              <button mat-raised-button
+                      (click)="openWebsite(selectedUser.website)"
+                      matTooltip="Visit website">
+                <mat-icon>language</mat-icon>
+                Visit Website
+              </button>
+              <button mat-icon-button
+                      (click)="clearSelection()"
+                      matTooltip="Close details">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Detailed Information Tabs -->
+      <mat-card class="details-card">
+        <mat-card-content>
+          <mat-tab-group animationDuration="200ms">
+            <!-- Contact Information Tab -->
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">contacts</mat-icon>
+                Contact
+                <span class="tab-badge">{{ getTabBadgeCount('contact') }}</span>
+              </ng-template>
+
+              <div class="tab-content" [@fadeIn]>
+                <mat-list>
+                  <!-- Email -->
+                  <mat-list-item>
+                    <mat-icon matListItemIcon color="primary">email</mat-icon>
+                    <div matListItemTitle>Email Address</div>
+                    <div matListItemLine>
+                      <a href="mailto:{{ selectedUser.email }}" class="contact-link">
+                        {{ selectedUser.email }}
+                      </a>
+                    </div>
+                    <button mat-icon-button
+                            matListItemMeta
+                            (click)="copyToClipboard(selectedUser.email, 'Email')"
+                            matTooltip="Copy email">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  </mat-list-item>
+
+                  <mat-divider></mat-divider>
+
+                  <!-- Phone -->
+                  <mat-list-item>
+                    <mat-icon matListItemIcon color="primary">phone</mat-icon>
+                    <div matListItemTitle>Phone Number</div>
+                    <div matListItemLine>
+                      <a href="tel:{{ selectedUser.phone }}" class="contact-link">
+                        {{ selectedUser.phone }}
+                      </a>
+                    </div>
+                    <button mat-icon-button
+                            matListItemMeta
+                            (click)="copyToClipboard(selectedUser.phone, 'Phone')"
+                            matTooltip="Copy phone">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  </mat-list-item>
+
+                  <mat-divider></mat-divider>
+
+                  <!-- Website -->
+                  <mat-list-item>
+                    <mat-icon matListItemIcon color="primary">language</mat-icon>
+                    <div matListItemTitle>Website</div>
+                    <div matListItemLine>
+                      <a (click)="openWebsite(selectedUser.website)"
+                         class="contact-link clickable">
+                        {{ selectedUser.website }}
+                      </a>
+                    </div>
+                    <button mat-icon-button
+                            matListItemMeta
+                            (click)="openWebsite(selectedUser.website)"
+                            matTooltip="Open website">
+                      <mat-icon>open_in_new</mat-icon>
+                    </button>
+                  </mat-list-item>
+
+                  <mat-divider></mat-divider>
+
+                  <!-- Address -->
+                  <mat-list-item>
+                    <mat-icon matListItemIcon color="primary">home</mat-icon>
+                    <div matListItemTitle>Address</div>
+                    <div matListItemLine>
+                      {{ getFullAddress(selectedUser.address) }}
+                    </div>
+                    <button mat-icon-button
+                            matListItemMeta
+                            (click)="openMap(selectedUser.address)"
+                            matTooltip="Open in Maps">
+                      <mat-icon>map</mat-icon>
+                    </button>
+                  </mat-list-item>
+                </mat-list>
+              </div>
+            </mat-tab>
+
+            <!-- Company Information Tab -->
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">business</mat-icon>
+                Company
+                <span class="tab-badge">{{ getTabBadgeCount('company') }}</span>
+              </ng-template>
+
+              <div class="tab-content" [@fadeIn]>
+                <div class="company-info">
+                  @for (detail of getCompanyDetails(selectedUser.company); track detail.label) {
+                    <mat-card class="info-card">
+                      <mat-card-header>
+                        <mat-icon mat-card-avatar [color]="$first ? 'primary' : 'accent'">
+                          {{ detail.icon }}
+                        </mat-icon>
+                        <mat-card-title>{{ detail.label }}</mat-card-title>
+                      </mat-card-header>
+                      <mat-card-content>
+                        <p class="info-value">{{ detail.value }}</p>
+                      </mat-card-content>
+                      <mat-card-actions align="end">
+                        <button mat-button
+                                (click)="copyToClipboard(detail.value, detail.label)">
+                          <mat-icon>content_copy</mat-icon>
+                          Copy
+                        </button>
+                      </mat-card-actions>
+                    </mat-card>
+                  }
+                </div>
+              </div>
+            </mat-tab>
+
+            <!-- Address Details Tab -->
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">location_on</mat-icon>
+                Location
+                <span class="tab-badge">{{ getTabBadgeCount('address') }}</span>
+              </ng-template>
+
+              <div class="tab-content" [@fadeIn]>
+                <mat-expansion-panel expanded>
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>
+                      <mat-icon>home</mat-icon>
+                      Physical Address
+                    </mat-panel-title>
+                  </mat-expansion-panel-header>
+
+                  <div class="address-details">
+                    <div class="address-line">
+                      <mat-icon>apartment</mat-icon>
+                      <span>{{ selectedUser.address.street }}, {{ selectedUser.address.suite }}</span>
+                    </div>
+                    <div class="address-line">
+                      <mat-icon>location_city</mat-icon>
+                      <span>{{ selectedUser.address.city }}</span>
+                    </div>
+                    <div class="address-line">
+                      <mat-icon>markunread_mailbox</mat-icon>
+                      <span>{{ selectedUser.address.zipcode }}</span>
+                    </div>
+                  </div>
+
+                  <mat-action-row>
+                    <button mat-button color="primary" (click)="openMap(selectedUser.address)">
+                      <mat-icon>map</mat-icon>
+                      Open in Google Maps
+                    </button>
+                    <button mat-button (click)="copyToClipboard(getFullAddress(selectedUser.address), 'Address')">
+                      <mat-icon>content_copy</mat-icon>
+                      Copy Address
+                    </button>
+                  </mat-action-row>
+                </mat-expansion-panel>
+
+                <mat-expansion-panel>
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>
+                      <mat-icon>my_location</mat-icon>
+                      GPS Coordinates
+                    </mat-panel-title>
+                  </mat-expansion-panel-header>
+
+                  <div class="coordinates-info">
+                    <mat-chip-listbox>
+                      <mat-chip>
+                        <mat-icon matChipAvatar>north</mat-icon>
+                        Lat: {{ selectedUser.address.geo.lat }}
+                      </mat-chip>
+                      <mat-chip>
+                        <mat-icon matChipAvatar>east</mat-icon>
+                        Lng: {{ selectedUser.address.geo.lng }}
+                      </mat-chip>
+                    </mat-chip-listbox>
+                  </div>
+
+                  <mat-action-row>
+                    <button mat-button color="primary"
+                            (click)="openCoordinates(selectedUser.address.geo)">
+                      <mat-icon>explore</mat-icon>
+                      View on Map
+                    </button>
+                    <button mat-button
+                            (click)="copyToClipboard(selectedUser.address.geo.lat + ', ' + selectedUser.address.geo.lng, 'Coordinates')">
+                      <mat-icon>content_copy</mat-icon>
+                      Copy Coordinates
+                    </button>
+                  </mat-action-row>
+                </mat-expansion-panel>
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Quick Actions Card -->
+      <mat-card class="quick-actions-card">
+        <mat-card-header>
+          <mat-card-title>Quick Actions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="quick-actions">
+            <button mat-stroked-button (click)="sendEmail(selectedUser.email)">
+              <mat-icon>email</mat-icon>
+              Send Email
+            </button>
+            <button mat-stroked-button (click)="callPhone(selectedUser.phone)">
+              <mat-icon>phone</mat-icon>
+              Call
+            </button>
+            <button mat-stroked-button (click)="openWebsite(selectedUser.website)">
+              <mat-icon>language</mat-icon>
+              Visit Website
+            </button>
+            <button mat-stroked-button (click)="openMap(selectedUser.address)">
+              <mat-icon>map</mat-icon>
+              View on Map
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading && !selectedUser) {
+    <mat-card class="loading-card">
+      <mat-card-content>
+        <div class="loading-content">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Loading user details...</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>
